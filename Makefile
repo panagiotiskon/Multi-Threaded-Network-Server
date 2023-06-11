@@ -9,7 +9,7 @@ NAME_CLIENT			:= client
 # CC        compiler
 # CFLAGS    compiler flags
 
-SRCS_SERVER        := server2.cpp
+SRCS_SERVER        := server2.cpp 
 OBJS_SERVER        := server2.o 
 
 SRCS_CLIENT        := client.cpp
