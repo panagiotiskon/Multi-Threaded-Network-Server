@@ -14,6 +14,18 @@
 #include <signal.h>
 #include <sys/socket.h>
 
+#define MAX_LINE_SIZE 256
+
 using namespace std;
 
+string filename;
+const char* host;
+int port;
+
+
+pthread_mutex_t  mutex = PTHREAD_MUTEX_INITIALIZER;
+
+
+void* send_vote(void *);
+int get_number_of_lines(void);
 void perror_exit ( char * message );
