@@ -4,21 +4,13 @@ int main(int argc, char *argv[])
 {
 
 	int port, serversock, clientsock;
-
 	int buff_size, num_threads;
-
 	int status;
 
-	pthread_t thr;
-
 	struct sockaddr_in server, client;
-
 	socklen_t clientlen;
-
 	struct sockaddr *serverptr = (struct sockaddr *)&server;
-
 	struct sockaddr *clientptr = (struct sockaddr *)&client;
-
 	struct hostent *rem;
 
 	struct sigaction sa;
@@ -37,8 +29,7 @@ int main(int argc, char *argv[])
 	port = atoi(argv[1]);
 	num_threads = atoi(argv[2]);
 	buff_size = atoi(argv[3]);
-	const char * poll_log_name = argv[4];
-	cout<<poll_log_name<<endl;
+	const char *poll_log_name = argv[4];
 	poll_stat_name = argv[5];
 
 	if (num_threads > THR_LIMIT)
@@ -47,11 +38,10 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	cout<<buff_size<<endl;
-	
-	poll_log_file = open(poll_log_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);   //create poll log file
+	poll_log_file = open(poll_log_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR); // create poll log file
 
-	if(poll_log_file==-1){
+	if (poll_log_file == -1)
+	{
 		perror_exit(" failed to open file");
 	}
 
@@ -59,9 +49,7 @@ int main(int argc, char *argv[])
 		perror_exit(" failed to create socket ");
 
 	server.sin_family = AF_INET; /* Internet domain */
-
 	server.sin_addr.s_addr = htonl(INADDR_ANY);
-
 	server.sin_port = htons(port); /* The given port */
 
 	if (bind(serversock, serverptr, sizeof(server)) < 0) /* Bind socket to address */
@@ -82,8 +70,8 @@ int main(int argc, char *argv[])
 
 	pthread_t *threads = new pthread_t[num_threads];
 
-	for (int i = 0; i < num_threads; i++)	// create threads
-	{ 											
+	for (int i = 0; i < num_threads; i++) // create threads
+	{
 		if (pthread_create(&threads[i], NULL, get_vote, NULL) < 0)
 			perror_exit(" failed to create thread ");
 	}
@@ -93,9 +81,9 @@ int main(int argc, char *argv[])
 		if ((clientsock = accept(serversock, clientptr, &clientlen)) < 0)
 			perror_exit("failed to accept ");
 
-		int* client_ptr = new int[sizeof(int)];
+		int *client_ptr = new int[sizeof(int)];
 		*client_ptr = clientsock;
-		
+
 		pthread_mutex_lock(&buffer_lock);
 
 		while (buffer.size() == buff_size)
@@ -105,15 +93,13 @@ int main(int argc, char *argv[])
 		buffer.push(client_ptr); // then push new connection to buffer
 		pthread_cond_signal(&buffer_nonempty);
 		pthread_mutex_unlock(&buffer_lock);
-
 	}
 
-	for (int i = 0; i < num_threads; i++)   //wait for threads to join
+	for (int i = 0; i < num_threads; i++) // wait for threads to join
 	{
 		if (pthread_join(threads[i], (void **)&status) < 0)
 			perror_exit(" failed to join");
 	}
-
 
 	pthread_exit(NULL);
 
@@ -124,19 +110,18 @@ int main(int argc, char *argv[])
 	return 1;
 }
 
-void* get_vote(void* arg)
+void *get_vote(void *arg)
 {
 	while (1)
 	{
 		pthread_mutex_lock(&buffer_lock);
 
-		while (buffer.size() == 0)
-		{ // wait if buffer is empty
+		while (buffer.size() == 0) 		// wait if buffer is empty
+		{
 			pthread_cond_wait(&buffer_nonempty, &buffer_lock);
 		}
 
 		int *client_sock = buffer.front();
-
 		buffer.pop();
 
 		pthread_cond_signal(&buffer_nonfull);
@@ -155,7 +140,7 @@ void* get_vote(void* arg)
 		{					 /* Receive 1 char */
 			putchar(buf[0]); /* Print received char */
 
-			if (buf[0] != '\n' &&  buf[0] != '\r')
+			if (buf[0] != '\n' && buf[0] != '\r')
 				temp_name.push_back(buf[0]);
 
 			if (buf[0] == '\n')
@@ -165,7 +150,7 @@ void* get_vote(void* arg)
 		string temp_name2(temp_name.begin(), temp_name.end());
 		pthread_mutex_lock(&names_lock); // lock names vector
 
-		if(!names.empty())
+		if (!names.empty())
 		{
 			if (count(names.begin(), names.end(), temp_name2))
 			{
@@ -189,9 +174,9 @@ void* get_vote(void* arg)
 		while (read(*newsock, buf, 1) > 0)
 		{
 			putchar(buf[0]);
-			if (buf[0] != '\n' && buf[0]!= '\r')
+			if (buf[0] != '\n' && buf[0] != '\r')
 				temp_party.push_back(buf[0]);
-				
+
 			if (buf[0] == '\n')
 				break;
 		}
@@ -215,15 +200,15 @@ void* get_vote(void* arg)
 		pthread_mutex_unlock(&votes_lock);
 
 		pthread_mutex_lock(&poll_lock);
-		char s[temp_name2.size() + temp_vote.size()+1];
-		strcpy(s,temp_name2.c_str());
+		char s[temp_name2.size() + temp_vote.size() + 1];
+		strcpy(s, temp_name2.c_str());
 		strcat(s, " ");
 		strcat(s, temp_vote.c_str());
-		strcat(s, "\n");		
+		strcat(s, "\n");
 		write(poll_log_file, s, strlen(s));
 		pthread_mutex_unlock(&poll_lock);
 
-		string s2 = "VOTE for Party "+temp_vote+" RECORDED\n";
+		string s2 = "VOTE for Party " + temp_vote + " RECORDED\n";
 		write(*newsock, s2.c_str(), s2.size());
 		temp_name.clear();
 		temp_name2.clear();
@@ -243,19 +228,25 @@ void perror_exit(char *message)
 	exit(EXIT_FAILURE);
 }
 
-void signal_handler(int, siginfo_t*, void*)
-{	
+void signal_handler(int, siginfo_t *, void *)
+{
 	signal_flag = 1;
 
-	poll_stat_file = open(poll_stat_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);   //create poll log file
+	poll_stat_file = open(poll_stat_name, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR); // create poll log file
 
-	if(!votes.empty())     // if there are votes
+	if (!votes.empty()) // if there are votes
 	{
-		if(political_parties.empty())
+		if (political_parties.empty())
+		{
+			string s = "TOTAL 0";
+			write(poll_stat_file, s.c_str(), s.size());
 			exit(1);
+		}
 		else
 		{
-			for (int i = 0; i < political_parties.size(); i++)			//for every political party find its number of occurances in the votes vector
+			int total = 0;
+			sort(political_parties.begin(), political_parties.end());
+			for (int i = 0; i < political_parties.size(); i++) // for every political party find its number of occurances in the votes vector
 			{
 				int count = 0;
 				for (int k = 0; k < votes.size(); k++)
@@ -263,9 +254,13 @@ void signal_handler(int, siginfo_t*, void*)
 					if (political_parties[i] == votes[k].second)
 						count++;
 				}
-				string s = political_parties[i] + " "+to_string(count) + "\n";		//write the number of votes for every party in poll-stat
+				total+=count;
+				string s = political_parties[i] + " " + to_string(count) + "\n"; // write the number of votes for every party in poll-stat
 				write(poll_stat_file, s.c_str(), s.size());
 			}
+
+			string s2 = "TOTAL "+to_string(total);
+			write(poll_stat_file, s2.c_str(), s2.size());
 		}
 	}
 }
