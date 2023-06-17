@@ -1,5 +1,5 @@
-NAME_SERVER        := server
-NAME_CLIENT			:= client 
+NAME_SERVER        := poller
+NAME_CLIENT			:= pollSwayer 
 #------------------------------------------------#
 #   INGREDIENTS                                  #
 #------------------------------------------------#
