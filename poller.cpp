@@ -227,11 +227,6 @@ void *get_vote(void *arg)
 	return NULL;
 }
 
-void perror_exit(char *message)
-{
-	perror(message);
-	exit(EXIT_FAILURE);
-}
 
 void signal_handler(int signalnum)
 {
@@ -249,8 +244,8 @@ void signal_handler(int signalnum)
 		}
 		else
 		{
+			vector <pair<string, int>> res;
 			int total = 0;
-			sort(political_parties.begin(), political_parties.end());
 			for (int i = 0; i < political_parties.size(); i++) // for every political party find its number of occurances in the votes vector
 			{
 				int count = 0;
@@ -259,12 +254,19 @@ void signal_handler(int signalnum)
 					if (political_parties[i] == votes[k].second)
 						count++;
 				}
+				res.push_back(make_pair(political_parties[i], count));
 				total+=count;
-				string s = political_parties[i] + " " + to_string(count) + "\n"; // write the number of votes for every party in poll-stat
+			}
+
+			sort(res.begin(), res.end(), compare);
+
+			for (int i = 0; i < res.size(); i++)
+			{
+				string s = res[i].first + " " + to_string(res[i].second) + "\n"; // write the number of votes for every party in poll-stat
 				write(poll_stat_file, s.c_str(), s.size());
 			}
 
-			string s2 = "TOTAL "+to_string(total)+"\n";
+			string s2 = "TOTAL " + to_string(total) + "\n";
 			write(poll_stat_file, s2.c_str(), s2.size());
 		}
 	}
@@ -272,4 +274,14 @@ void signal_handler(int signalnum)
 	cout<<"\n\nServer is Terminated successfully"<<endl;
 
 	exit(1);
+}
+
+void perror_exit(char *message)
+{
+	perror(message);
+	exit(EXIT_FAILURE);
+}
+
+bool compare(pair<string, int>& a, pair<string, int>& b) {
+    return a.second > b.second;
 }

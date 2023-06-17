@@ -1,13 +1,13 @@
 
 #include <stdio.h>
-#include <sys/wait.h>	/* sockets */
-#include <sys/types.h>	/* sockets */
-#include <sys/socket.h> /* sockets */
-#include <netinet/in.h> /* internet sockets */
-#include <netdb.h>		/* ge th os tb ya dd r */
-#include <unistd.h>		/* fork */
-#include <stdlib.h>		/* exit */
-#include <ctype.h>		/* toupper */
+#include <sys/wait.h>	
+#include <sys/types.h>	
+#include <sys/socket.h> 
+#include <netinet/in.h> 
+#include <netdb.h>		
+#include <unistd.h>		
+#include <stdlib.h>		
+#include <ctype.h>		
 #include <csignal>
 #include <pthread.h>
 #include <iostream>
@@ -15,7 +15,7 @@
 #include <queue>
 #include <utility>
 #include <algorithm>
-#include <cstring> // for strcpy
+#include <cstring>
 #include <fcntl.h>
 
 #define THR_LIMIT 100
@@ -45,3 +45,4 @@ pthread_cond_t buffer_nonfull = PTHREAD_COND_INITIALIZER;   //full buffer in mas
 void perror_exit(char *message);
 void* get_vote(void* arg);
 void signal_handler(int signum);
+bool compare(pair<string, int>& a, pair<string, int>& b);
