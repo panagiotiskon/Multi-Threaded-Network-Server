@@ -8,7 +8,7 @@
 #include <unistd.h>		/* fork */
 #include <stdlib.h>		/* exit */
 #include <ctype.h>		/* toupper */
-#include <signal.h>		/* signal */
+#include <csignal>
 #include <pthread.h>
 #include <iostream>
 #include <vector>
@@ -19,7 +19,6 @@
 #include <fcntl.h>
 
 #define THR_LIMIT 100
-
 using namespace std;
 
 queue <int* > buffer;
@@ -45,5 +44,4 @@ pthread_cond_t buffer_nonfull = PTHREAD_COND_INITIALIZER;   //full buffer in mas
 
 void perror_exit(char *message);
 void* get_vote(void* arg);
-void signal_handler(int, siginfo_t*, void* );
-
+void signal_handler(int signum);

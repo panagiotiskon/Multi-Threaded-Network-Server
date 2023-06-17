@@ -9,11 +9,11 @@ NAME_CLIENT			:= client
 # CC        compiler
 # CFLAGS    compiler flags
 
-SRCS_SERVER        := server2.cpp 
-OBJS_SERVER        := server2.o 
+SRCS_SERVER        := poller.cpp 
+OBJS_SERVER        := poller.o 
 
-SRCS_CLIENT        := client.cpp
-OBJS_CLIENT        := client.o 
+SRCS_CLIENT        := pollSwayer.cpp
+OBJS_CLIENT        := pollSwayer.o 
 
 CC          := g++
 CFLAGS      := -Wall -Wextra -Werror

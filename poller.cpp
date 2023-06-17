@@ -1,8 +1,11 @@
-#include "libs_server.hpp"
+// PANAGIOTIS KONTOEIDIS
+// 1115201900266
+
+
+#include "libs_poller.hpp"
 
 int main(int argc, char *argv[])
 {
-
 	int port, serversock, clientsock;
 	int buff_size, num_threads;
 	int status;
@@ -54,7 +57,7 @@ int main(int argc, char *argv[])
 	if (bind(serversock, serverptr, sizeof(server)) < 0) /* Bind socket to address */
 		perror_exit(" failed to bind ");
 
-	if (listen(serversock, 5) < 0) /* Listen for connections */
+	if (listen(serversock,128) < 0) /* Listen for connections */
 		perror_exit(" failed to listen ");
 
 	printf(" Listening for connections to port % d \n ", port);
@@ -99,7 +102,6 @@ int main(int argc, char *argv[])
 
 	pthread_exit(NULL);
 
-	close(clientsock);
 	close(serversock);
 
 	delete[] threads;
@@ -115,7 +117,6 @@ void *get_vote(void *arg)
 		{
 			pthread_cond_wait(&buffer_nonempty, &buffer_lock);
 		}
-		cout<<buffer.size()<<endl;
 
 		int *client_sock = buffer.front();
 		buffer.pop();
@@ -124,73 +125,73 @@ void *get_vote(void *arg)
 		pthread_mutex_unlock(&buffer_lock);
 
 		char buf[1];
-
+		char buf2[1];
 		int *newsock = client_sock;
-		cout<<"aaaaaaaaaaa"<<endl;
 
 		string s4 = "SEND NAME PLEASE\n";
 
-		if(write(*newsock, s4.c_str(), 20)<0)
+		if(send(*newsock, s4.c_str(), s4.length(), 0)<0)
 			perror_exit("write problem");
 
-		string temp_name;
 		string temp_party;
-
+		string temp_name;		
 
 		while (read(*newsock, buf, 1) > 0)
 		{					 /* Receive 1 char */
-			putchar(buf[0]); /* Print received char */
-
 			if (buf[0] != '\n' && buf[0] != '\r')
 				temp_name.push_back(buf[0]);
 
-			if (buf[0] == '\n')
+			if (buf[0] == '\n'){
+				temp_name.push_back('\0');
 				break;
+			}
 		}
-		
+
+		pthread_mutex_lock(&names_lock);
+
 		if (!names.empty())
-		{
-			if (count(names.begin(), names.end(), temp_name))
+		{	
+			cout<<"temp2 "<<temp_name<<endl;
+			if (find(names.begin(), names.end(), temp_name)!=names.end())
 			{
+				cout<<"name is "<<temp_name<<endl;
 				write(*newsock, "ALREADY VOTED\n", 14);
 				printf("Closing connection .\n ");
+				pthread_mutex_unlock(&names_lock);
 				close(*newsock); /* Close socket */
-				// pthread_mutex_unlock(&names_lock);
+
 				continue;
 			}
 			else
 			{		
-				pthread_mutex_lock(&names_lock);
 				names.push_back(temp_name);
-				pthread_mutex_unlock(&names_lock);
-
 			}
 		}
 		else
 		{
-			pthread_mutex_lock(&names_lock);
 			names.push_back(temp_name);
-			pthread_mutex_unlock(&names_lock);
-
 		}
 		
+		pthread_mutex_unlock(&names_lock);
+
 		write(*newsock, "SEND VOTE PLEASE\n", 18);
 
-		while (read(*newsock, buf, 1) > 0)
+		while (read(*newsock, buf2, 1) > 0)
 		{
-			putchar(buf[0]);
+			putchar(buf2[0]);
 			
-			if (buf[0] != '\n' && buf[0] != '\r')
-				temp_party.push_back(buf[0]);
+			if (buf2[0] != '\n' && buf2[0] != '\r')
+				temp_party.push_back(buf2[0]);
 
-			if (buf[0] == '\n')
-				break;
+			if (buf2[0] == '\n'){
+				temp_party.push_back('\0');
+				break;}
 		}
 
 		pthread_mutex_lock(&parties_lock);
 		if (!political_parties.empty())
 		{
-			if (count(political_parties.begin(), political_parties.end(),temp_party) == 0)
+			if (find(political_parties.begin(), political_parties.end(),temp_party) == political_parties.end())
 			{
 				political_parties.push_back(temp_party);
 			}
@@ -217,7 +218,7 @@ void *get_vote(void *arg)
 		string s2 = "VOTE for Party " + temp_party + " RECORDED\n";
 		write(*newsock, s2.c_str(), s2.size());
 		temp_name.clear();
-
+		temp_party.clear();
 		printf("Closing connection .\n ");
 		close(*newsock); /* Close socket */
 	}
@@ -263,10 +264,12 @@ void signal_handler(int signalnum)
 				write(poll_stat_file, s.c_str(), s.size());
 			}
 
-			string s2 = "TOTAL "+to_string(total);
+			string s2 = "TOTAL "+to_string(total)+"\n";
 			write(poll_stat_file, s2.c_str(), s2.size());
 		}
 	}
+
 	cout<<"\n\nServer is Terminated successfully"<<endl;
+
 	exit(1);
 }
