@@ -92,7 +92,7 @@ void* send_vote(void* arg){
         }
         else if (flag == 1 && buf[i] == ' ')
         {
-            name.push_back('\0');
+            name.push_back('\n');
             flag = 2;
         }
         else if (flag == 2 && buf[i] != '\n')
@@ -101,7 +101,7 @@ void* send_vote(void* arg){
         }
         else if (flag == 2 && buf[i] == '\n')
         {
-            vote.push_back('\0');
+            vote.push_back('\n');
             break;
         }
     }
@@ -130,10 +130,64 @@ void* send_vote(void* arg){
     server.sin_port = htons(port); /* Server port */
     /* Initiate connection */
     if (connect(sock, serverptr, sizeof(server)) < 0)
-
         perror_exit(" connect ");
+
     printf(" Connecting to % s port % d \n ", host, port);
+
+    // for(int i=0; i<strlen(buf); i++)
+    //     buf[i]= NULL;
+    char buf2[1];
+    char buf3[1];
+
+    while (read(sock, buf2, 1) > 0)
+    {
+        if (buf2[0] != '\n')
+        {
+            putchar(buf2[0]);
+        }
+        else
+        {
+            putchar('\n');
+            break;
+        }
+    }
+
+    write(sock, name.c_str(), name.size());
+    cout<<name<<endl;
+
+    while (read(sock, buf2, 1) > 0)
+    {
+        if (buf2[0] != '\n')
+        {
+            putchar(buf2[0]);
+        }
+        else
+        {
+            putchar(buf2[0]);
+            break;
+        }
+    }
     
+    if(write(sock, vote.c_str(), vote.size())<0)
+        perror("write ");
+
+    cout<<vote<<endl;
+
+    while (read(sock, buf3, 1) > 0)
+    {
+        if (buf3[0] != '\n')
+        {
+            putchar(buf3[0]);
+        }
+        else
+        {
+            putchar('\n');
+            break;
+        }
+    }
+    
+
+
     close(sock);
     pthread_exit(NULL);
     return nullptr;

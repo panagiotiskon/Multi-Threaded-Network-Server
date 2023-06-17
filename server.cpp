@@ -13,11 +13,10 @@ int main(int argc, char *argv[])
 	struct sockaddr *clientptr = (struct sockaddr *)&client;
 	struct hostent *rem;
 
-	struct sigaction sa;
-
-	sa.sa_sigaction = signal_handler;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = SA_SIGINFO;
+	static struct sigaction sa;
+	sa.sa_handler = signal_handler;
+	sigemptyset(&(sa.sa_mask));
+	sa.sa_flags = 0;
 	sigaction(SIGINT, &sa, NULL);
 
 	if (argc < 2)
@@ -55,7 +54,7 @@ int main(int argc, char *argv[])
 	if (bind(serversock, serverptr, sizeof(server)) < 0) /* Bind socket to address */
 		perror_exit(" failed to bind ");
 
-	if (listen(serversock, 128) < 0) /* Listen for connections */
+	if (listen(serversock, 5) < 0) /* Listen for connections */
 		perror_exit(" failed to listen ");
 
 	printf(" Listening for connections to port % d \n ", port);
@@ -76,11 +75,8 @@ int main(int argc, char *argv[])
 			perror_exit(" failed to create thread ");
 	}
 
-	while (!signal_flag)
+	while ((clientsock = accept(serversock, clientptr, &clientlen))>0)
 	{
-		if ((clientsock = accept(serversock, clientptr, &clientlen)) < 0)
-			perror_exit("failed to accept ");
-
 		int *client_ptr = new int[sizeof(int)];
 		*client_ptr = clientsock;
 
@@ -115,11 +111,11 @@ void *get_vote(void *arg)
 	while (1)
 	{
 		pthread_mutex_lock(&buffer_lock);
-
 		while (buffer.size() == 0) 		// wait if buffer is empty
 		{
 			pthread_cond_wait(&buffer_nonempty, &buffer_lock);
 		}
+		cout<<buffer.size()<<endl;
 
 		int *client_sock = buffer.front();
 		buffer.pop();
@@ -129,12 +125,17 @@ void *get_vote(void *arg)
 
 		char buf[1];
 
-		int *newsock = nullptr;
-		newsock = client_sock;
-		write(*newsock, "SEND NAME PLEASE\n", 18);
+		int *newsock = client_sock;
+		cout<<"aaaaaaaaaaa"<<endl;
 
-		vector<char> temp_name;
-		vector<char> temp_party;
+		string s4 = "SEND NAME PLEASE\n";
+
+		if(write(*newsock, s4.c_str(), 20)<0)
+			perror_exit("write problem");
+
+		string temp_name;
+		string temp_party;
+
 
 		while (read(*newsock, buf, 1) > 0)
 		{					 /* Receive 1 char */
@@ -146,73 +147,76 @@ void *get_vote(void *arg)
 			if (buf[0] == '\n')
 				break;
 		}
-
-		string temp_name2(temp_name.begin(), temp_name.end());
-		pthread_mutex_lock(&names_lock); // lock names vector
-
+		
 		if (!names.empty())
 		{
-			if (count(names.begin(), names.end(), temp_name2))
+			if (count(names.begin(), names.end(), temp_name))
 			{
 				write(*newsock, "ALREADY VOTED\n", 14);
 				printf("Closing connection .\n ");
 				close(*newsock); /* Close socket */
-				pthread_mutex_unlock(&names_lock);
+				// pthread_mutex_unlock(&names_lock);
 				continue;
 			}
 			else
-			{
-				names.push_back(temp_name2);
+			{		
+				pthread_mutex_lock(&names_lock);
+				names.push_back(temp_name);
+				pthread_mutex_unlock(&names_lock);
+
 			}
 		}
 		else
 		{
-			names.push_back(temp_name2);
+			pthread_mutex_lock(&names_lock);
+			names.push_back(temp_name);
+			pthread_mutex_unlock(&names_lock);
+
 		}
-		pthread_mutex_unlock(&names_lock);
+		
 		write(*newsock, "SEND VOTE PLEASE\n", 18);
+
 		while (read(*newsock, buf, 1) > 0)
 		{
 			putchar(buf[0]);
+			
 			if (buf[0] != '\n' && buf[0] != '\r')
 				temp_party.push_back(buf[0]);
 
 			if (buf[0] == '\n')
 				break;
 		}
-		string temp_vote(temp_party.begin(), temp_party.end());
+
 		pthread_mutex_lock(&parties_lock);
 		if (!political_parties.empty())
 		{
-			if (count(political_parties.begin(), political_parties.end(), temp_vote) == 0)
+			if (count(political_parties.begin(), political_parties.end(),temp_party) == 0)
 			{
-				political_parties.push_back(temp_vote);
+				political_parties.push_back(temp_party);
 			}
 		}
 		else
 		{
-			political_parties.push_back(temp_vote); // add to political parties vector
+			political_parties.push_back(temp_party); // add to political parties vector
 		}
 		pthread_mutex_unlock(&parties_lock);
 
 		pthread_mutex_lock(&votes_lock);
-		votes.push_back(make_pair(temp_name2, temp_vote)); // add to votes
+		votes.push_back(make_pair(temp_name, temp_party)); // add to votes
 		pthread_mutex_unlock(&votes_lock);
 
 		pthread_mutex_lock(&poll_lock);
-		char s[temp_name2.size() + temp_vote.size() + 1];
-		strcpy(s, temp_name2.c_str());
+		char s[temp_name.size() + temp_party.size() + 1];
+		strcpy(s, temp_name.c_str());
 		strcat(s, " ");
-		strcat(s, temp_vote.c_str());
+		strcat(s, temp_party.c_str());
 		strcat(s, "\n");
 		write(poll_log_file, s, strlen(s));
 		pthread_mutex_unlock(&poll_lock);
 
-		string s2 = "VOTE for Party " + temp_vote + " RECORDED\n";
+		string s2 = "VOTE for Party " + temp_party + " RECORDED\n";
 		write(*newsock, s2.c_str(), s2.size());
 		temp_name.clear();
-		temp_name2.clear();
-		temp_vote.clear();
 
 		printf("Closing connection .\n ");
 		close(*newsock); /* Close socket */
@@ -228,7 +232,7 @@ void perror_exit(char *message)
 	exit(EXIT_FAILURE);
 }
 
-void signal_handler(int, siginfo_t *, void *)
+void signal_handler(int signalnum)
 {
 	signal_flag = 1;
 
@@ -263,4 +267,6 @@ void signal_handler(int, siginfo_t *, void *)
 			write(poll_stat_file, s2.c_str(), s2.size());
 		}
 	}
+	cout<<"\n\nServer is Terminated successfully"<<endl;
+	exit(1);
 }
