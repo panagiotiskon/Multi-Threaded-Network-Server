@@ -26,7 +26,6 @@ vector<pair<string, string>> votes;
 vector<string> names;
 vector<string> political_parties;
 
-int signal_flag = 0;
 int poll_log_file = -1;
 int poll_stat_file = -1;
 
@@ -42,7 +41,6 @@ pthread_mutex_t  poll_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t buffer_nonempty = PTHREAD_COND_INITIALIZER; //empty buffer in worker
 pthread_cond_t buffer_nonfull = PTHREAD_COND_INITIALIZER;   //full buffer in master 
 
-void perror_exit(char *message);
 void* get_vote(void* arg);
 void signal_handler(int signum);
 bool compare(pair<string, int>& a, pair<string, int>& b);
