@@ -1,6 +1,6 @@
 # Multi-Threaded-Network-Server
 
-## How to run:
+## How to deploy:
 
 ### Server ( PollSwayer ):
     ./pollSwayer  [serverName]  [portNum]  [inputFile.txt]
